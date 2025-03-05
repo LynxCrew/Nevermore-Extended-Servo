@@ -36,7 +36,7 @@ max_temp:
 sensor_type:
 #sensor_pin:
 #   The thermistor that should be used to temp control the servo, set it up like
-#   and normal sensor for example with a temperature_fan
+#   any normal sensor for example with a temperature_fan
 #hold_time: 0.5
 #   How long the servo should hold its position before being disengaged, the
 #   default is 0.5s
