@@ -3,7 +3,6 @@ import logging
 import threading
 
 from extras.nevermore_servo_profile_manager import ProfileManager
-from . import servo
 
 KELVIN_TO_CELSIUS = -273.15
 AMBIENT_TEMP = 25.0
@@ -42,7 +41,7 @@ class NevermoreServo:
         self.name = name_parts[-1]
         self.gcode = self.printer.lookup_object("gcode")
         self.configfile = self.printer.lookup_object("configfile")
-        self.last_temp = self.target_temp = 0.0
+        self.last_temp = 0.0
         self.last_percent = 0.0
         self.measured_min = 99999999.0
         self.measured_max = -99999999.0
@@ -59,6 +58,7 @@ class NevermoreServo:
         )
         self.pmgr = ProfileManager(self, self.control_types)
         self.control = self.lookup_control(self.pmgr.init_default_profile())
+        self.pmgr.cached_control = self.control
         if self.control is None:
             raise self.config.error(
                 "Default Nevermore Servo-Profile could not be loaded."
@@ -110,6 +110,13 @@ class NevermoreServo:
         self.sensor.setup_minmax(self.min_temp, self.max_temp)
         self.sensor.setup_callback(self.temperature_callback)
         pheaters.register_sensor(config, self)
+        self.target_temp_conf = config.getfloat(
+            "target_temp",
+            40.0 if self.max_temp > 40.0 else self.max_temp,
+            minval=self.min_temp,
+            maxval=self.max_temp,
+        )
+        self.target_temp = self.target_temp_conf
 
         self.gcode.register_mux_command(
             "NEVERMORE_SERVO_PROFILE",
@@ -118,16 +125,45 @@ class NevermoreServo:
             self.pmgr.cmd_NEVERMORE_SERVO_PROFILE,
             desc=self.pmgr.cmd_NEVERMORE_SERVO_PROFILE_help,
         )
+        self.gcode.register_mux_command(
+            "SET_NEVERMORE_SERVO_TEMPERATURE"
+            "NEVERMORE_SERVO",
+            self.name,
+            self.cmd_SET_NEVERMORE_SERVO_TEMPERATURE,
+            desc=self.cmd_SET_NEVERMORE_SERVO_TEMPERATURE_help,
+        )
+
+    cmd_SET_NEVERMORE_SERVO_TEMPERATURE_help = "Sets a nevermore_servo target temperature"
+
+    def cmd_SET_NEVERMORE_SERVO_TEMPERATURE(self, gcmd):
+        degrees = gcmd.get_float("TARGET", 0.0)
+        if degrees and (degrees < self.min_temp or degrees > self.max_temp):
+            raise self.printer.command_error(
+                "Requested temperature (%.1f) out of range (%.1f:%.1f)"
+                % (degrees, self.min_temp, self.max_temp)
+            )
+        self.target_temp = degrees
 
     def temperature_callback(self, read_time, temp):
         self.last_temp = temp
+        if temp:
+            self.measured_min = min(self.measured_min, temp)
+            self.measured_max = max(self.measured_max, temp)
+        if self.control is None:
+            return
         percent = self.control.angle_update(read_time, temp, self.target_temp)
         if abs(percent - self.last_percent) < self.update_tolerance:
             self.last_percent = percent
             self.nevermore.set_vent_servo(percent, self.hold_time)
-        if temp:
-            self.measured_min = min(self.measured_min, temp)
-            self.measured_max = max(self.measured_max, temp)
+
+
+    def get_temp(self, eventtime):
+        return self.last_temp, self.target_temp
+
+    def is_adc_faulty(self):
+        if self.last_temp > self.max_temp or self.last_temp < self.min_temp:
+            return True
+        return False
 
     def lookup_control(self, profile):
         return self.control_types[profile["control"]](profile, self)
@@ -140,6 +176,15 @@ class NevermoreServo:
 
     def get_control(self):
         return self.control
+
+    def get_status(self, eventtime):
+        return {
+            "temperature": round(self.last_temp, 2),
+            "measured_min_temp": round(self.measured_min, 2),
+            "measured_max_temp": round(self.measured_max, 2),
+            "target": self.target_temp,
+            "control": self.control.get_type(),
+        }
 
 
 class ControlBangBang:

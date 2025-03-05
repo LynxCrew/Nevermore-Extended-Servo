@@ -112,3 +112,13 @@ CONTROL=<control_type> KP=<kp> KI=<ki> KD=<kd> SAVE_PROFILE=1`:
 Creates a new profile with the given values.
 The possible values are dependant on the control type, you can set everything you can set in config.
 SAVE_PROFILE specifies whether the profile should be saved afterwards.
+
+`NEVERMORE_SERVO_PROFILE MANUAL=1 NEVERMORE_SERVO=<nevermore_servo_name>`:
+With this, you set the servo into manual mode.
+If MANUAL=1, the automatic control will be disabled and it can be controlled normally
+via commands.
+MANUAL=0 will load the last used control again.
+
+#### SET_NEVERMORE_SERVO_TEMPERATURE
+`SET_NEVERMORE_SERVO_TEMPERATURE NEVERMORE_SERVO=<nevermore_servo_name> [TARGET=<target_temperature>]`
+Set the target Temperature for the nevermore-servo control algorithm.

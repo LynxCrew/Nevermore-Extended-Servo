@@ -10,6 +10,7 @@ class ProfileManager:
         self.control_types = control_types
         self.profiles = {}
         self.incompatible_profiles = []
+        self.cached_control = None
         # Fetch stored profiles from Config
         stored_profs = self.servo.config.get_prefix_sections(
             "nevermore_servo_profile %s" % self.servo.name
@@ -208,6 +209,17 @@ class ProfileManager:
                 "No profile named [%s] to remove" % profile_name
             )
 
+    def use_manual(self, profile_name, gcmd=None):
+        if profile_name == 1:
+            self.cached_control = self.servo.set_control(None)
+        elif profile_name == 0:
+            self.servo.set_control(self.cached_control)
+        else:
+            raise self.servo.gcode.error(
+                "nevermore_servo_profile: manual can be either 0 or 1"
+            )
+
+
     cmd_NEVERMORE_SERVO_PROFILE_help = (
         "Nevermore Servo Profile Persistent Storage management"
     )
@@ -219,6 +231,7 @@ class ProfileManager:
                 "SAVE": self.save_profile,
                 "SET_VALUES": self.set_values,
                 "REMOVE": self.remove_profile,
+                "MANUAL": self.use_manual,
             }
         )
         for key in options:
