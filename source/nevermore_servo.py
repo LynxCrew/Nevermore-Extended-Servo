@@ -111,14 +111,11 @@ class NevermoreServo:
             self.report_time = self.config.getfloat(
                 "sensor_report_time", 1.0, above=0.0
             )
-            self.temperature_sensor = self.printer.load_object(
-                self.config, self.temp_sensor_name
-            )
             self.temp_sample_timer = self.reactor.register_timer(
                 self._temp_callback_timer
             )
-            self.printer.add_object("nevermore_servo " + self.name, self)
             self.printer.register_event_handler("klippy:connect", self._handle_connect)
+            self.printer.register_event_handler("klippy:ready", self._handle_ready)
         else:
             self.min_temp = config.getfloat("min_temp", minval=KELVIN_TO_CELSIUS)
             self.max_temp = config.getfloat("max_temp", above=self.min_temp)
@@ -150,6 +147,21 @@ class NevermoreServo:
         )
 
     def _handle_connect(self):
+        self.temperature_sensor = self.printer.lookup_object(self.temp_sensor_name)
+        # check if sensor has get_status function and
+        # get_status has a 'temperature' value
+        if hasattr(
+            self.temperature_sensor, "get_status"
+        ) and "temperature" in self.temperature_sensor.get_status(
+            self.reactor.monotonic()
+        ):
+            return
+        raise self.printer.config_error(
+            "'%s' does not report a temperature." % (self.temp_sensor_name,)
+        )
+
+    def _handle_ready(self):
+        # Start temperature update timer
         self.reactor.update_timer(self.temp_sample_timer, self.reactor.NOW)
 
     cmd_SET_NEVERMORE_SERVO_TEMPERATURE_help = (
@@ -167,17 +179,10 @@ class NevermoreServo:
 
     def _temp_callback_timer(self, eventtime):
         measured_time = self.reactor.monotonic()
-        if hasattr(
-            self.temperature_sensor, "get_status"
-        ) and "temperature" in self.temperature_sensor.get_status(measured_time):
-            self.temperature_callback(
-                measured_time,
-                self.temperature_sensor.get_status(measured_time)["temperature"],
-            )
-        else:
-            raise self.printer.config_error(
-                "'%s' does not report a temperature." % (self.temp_sensor_name,)
-            )
+        self.temperature_callback(
+            measured_time,
+            self.temperature_sensor.get_status(eventtime)["temperature"],
+        )
 
         return measured_time + self.report_time
 
