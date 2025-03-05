@@ -33,6 +33,9 @@ nevermore:
 min_temp:
 max_temp:
 #   See the "extruder" section for a description of the above parameters.
+#target_temp: 40.0
+#   A temperature (in Celsius) that will be the target temperature.
+#   The default is 40 degrees.
 sensor_type:
 #sensor_pin:
 #   The thermistor that should be used to temp control the servo, set it up like
