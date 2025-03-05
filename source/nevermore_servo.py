@@ -98,18 +98,35 @@ class NevermoreServo:
         if self.nevermore_name is not None:
             self.nevermore = self.printer.load_object(config, self.nevermore_name)
 
-        self.hold_time = self.config.get_float("hold_time", 0.5, above=0.0)
-        self.update_tolerance = self.config.get_float(
+        self.hold_time = self.config.getfloat("hold_time", 0.5, above=0.0)
+        self.update_tolerance = self.config.getfloat(
             "update_tolerance", 1.0, minval=0.0
         )
 
-        self.min_temp = config.getfloat("min_temp", minval=KELVIN_TO_CELSIUS)
-        self.max_temp = config.getfloat("max_temp", above=self.min_temp)
-        pheaters = self.printer.load_object(config, "heaters")
-        self.sensor = pheaters.setup_sensor(config)
-        self.sensor.setup_minmax(self.min_temp, self.max_temp)
-        self.sensor.setup_callback(self.temperature_callback)
-        pheaters.register_sensor(config, self)
+        self.temperature_sensor = None
+        self.temp_sample_timer = None
+        self.report_time = None
+        self.temp_sensor_name = self.config.get("temperature_sensor", None)
+        if self.temp_sensor_name is not None:
+            self.report_time = self.config.getfloat(
+                "sensor_report_time", 1.0, above=0.0
+            )
+            self.temperature_sensor = self.printer.load_object(
+                self.config, self.temp_sensor_name
+            )
+            self.temp_sample_timer = self.reactor.register_timer(
+                self._temp_callback_timer
+            )
+            self.printer.add_object("nevermore_servo " + self.name, self)
+            self.printer.register_event_handler("klippy:connect", self._handle_connect)
+        else:
+            self.min_temp = config.getfloat("min_temp", minval=KELVIN_TO_CELSIUS)
+            self.max_temp = config.getfloat("max_temp", above=self.min_temp)
+            pheaters = self.printer.load_object(config, "heaters")
+            self.sensor = pheaters.setup_sensor(config)
+            self.sensor.setup_minmax(self.min_temp, self.max_temp)
+            self.sensor.setup_callback(self.temperature_callback)
+            pheaters.register_sensor(config, self)
         self.target_temp_conf = config.getfloat(
             "target_temp",
             40.0 if self.max_temp > 40.0 else self.max_temp,
@@ -126,14 +143,18 @@ class NevermoreServo:
             desc=self.pmgr.cmd_NEVERMORE_SERVO_PROFILE_help,
         )
         self.gcode.register_mux_command(
-            "SET_NEVERMORE_SERVO_TEMPERATURE"
-            "NEVERMORE_SERVO",
+            "SET_NEVERMORE_SERVO_TEMPERATURE" "NEVERMORE_SERVO",
             self.name,
             self.cmd_SET_NEVERMORE_SERVO_TEMPERATURE,
             desc=self.cmd_SET_NEVERMORE_SERVO_TEMPERATURE_help,
         )
 
-    cmd_SET_NEVERMORE_SERVO_TEMPERATURE_help = "Sets a nevermore_servo target temperature"
+    def _handle_connect(self):
+        self.reactor.update_timer(self.temp_sample_timer, self.reactor.NOW)
+
+    cmd_SET_NEVERMORE_SERVO_TEMPERATURE_help = (
+        "Sets a nevermore_servo target temperature"
+    )
 
     def cmd_SET_NEVERMORE_SERVO_TEMPERATURE(self, gcmd):
         degrees = gcmd.get_float("TARGET", 0.0)
@@ -143,6 +164,22 @@ class NevermoreServo:
                 % (degrees, self.min_temp, self.max_temp)
             )
         self.target_temp = degrees
+
+    def _temp_callback_timer(self, eventtime):
+        measured_time = self.reactor.monotonic()
+        if hasattr(
+            self.temperature_sensor, "get_status"
+        ) and "temperature" in self.temperature_sensor.get_status(measured_time):
+            self.temperature_callback(
+                measured_time,
+                self.temperature_sensor.get_status(measured_time)["temperature"],
+            )
+        else:
+            raise self.printer.config_error(
+                "'%s' does not report a temperature." % (self.temp_sensor_name,)
+            )
+
+        return measured_time + self.report_time
 
     def temperature_callback(self, read_time, temp):
         self.last_temp = temp
@@ -155,7 +192,6 @@ class NevermoreServo:
         if abs(percent - self.last_percent) < self.update_tolerance:
             self.last_percent = percent
             self.nevermore.set_vent_servo(percent, self.hold_time)
-
 
     def get_temp(self, eventtime):
         return self.last_temp, self.target_temp

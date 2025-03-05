@@ -36,10 +36,18 @@ max_temp:
 #target_temp: 40.0
 #   A temperature (in Celsius) that will be the target temperature.
 #   The default is 40 degrees.
-sensor_type:
+#
+# You can either define a sensor normally like this:
+#sensor_type:
 #sensor_pin:
 #   The thermistor that should be used to temp control the servo, set it up like
 #   any normal sensor for example with a temperature_fan
+# Or define the name of an existing sensor:
+#temperature_sensor:
+#   Name of the temperature_sensor to use
+#sensor_report_time: 1.0
+#   How many seconds to wait between each callback, lower increases sample rate
+#   but also load on the host
 #hold_time: 0.5
 #   How long the servo should hold its position before being disengaged, the
 #   default is 0.5s
