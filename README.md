@@ -86,3 +86,25 @@ control: watermark
 #   See the "nevermore_servo" section for a description of the above parameters.
 ```
 
+## Gcode Reference:
+#### NEVERMORE_SERVO_PROFILE
+`NEVERMORE_SERVO_PROFILE LOAD=<profile_name> NEVERMORE_SERVO=<nevermore_servo_name>
+[DEFAULT=<profile_name>] [VERBOSE=<verbosity>]`:
+Loads the given NEVERMORE_SERVO_PROFILE for the specified nevermore_servo.
+If DEFAULT is specified, the Profile specified in DEFAULT will be loaded when
+then given Profile for LOAD can't be found (like a getOrDefault method).
+If VERBOSE is set to LOW, minimal info will be written in console.
+If set to NONE, no console outputs will be given.
+
+`NEVERMORE_SERVO_PROFILE SAVE=<profile_name> NEVERMORE_SERVO=<nevermore_servo_name>`:
+Saves the currently loaded profile of the specified nevermore_servo to the config
+under the given name.
+
+`NEVERMORE_SERVO_PROFILE REMOVE=<profile_name> NEVERMORE_SERVO=<nevermore_servo_name>`:
+Removes the given profile from the profiles List for the current session and config if SAVE_CONFIG is issued afterwards.
+
+`NEVERMORE_SERVO_PROFILE SET_VALUES=<profile_name> NEVERMORE_SERVO=<nevermore_servo_name>
+CONTROL=<control_type> KP=<kp> KI=<ki> KD=<kd> SAVE_PROFILE=1`:
+Creates a new profile with the given values.
+The possible values are dependant on the control type, you can set everything you can set in config.
+SAVE_PROFILE specifies whether the profile should be saved afterwards.

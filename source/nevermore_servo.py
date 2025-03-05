@@ -47,6 +47,7 @@ class NevermoreServo:
         self.measured_min = 99999999.0
         self.measured_max = -99999999.0
         self.reactor = self.printer.get_reactor()
+        self.lock = threading.Lock()
 
         self.control_types = collections.OrderedDict(
             {
@@ -111,6 +112,14 @@ class NevermoreServo:
         self.sensor.setup_callback(self.temperature_callback)
         pheaters.register_sensor(config, self)
 
+        self.gcode.register_mux_command(
+            "NEVERMORE_SERVO_PROFILE",
+            "NEVERMORE_SERVO",
+            self.name,
+            self.pmgr.cmd_NEVERMORE_SERVO_PROFILE,
+            desc=self.pmgr.cmd_NEVERMORE_SERVO_PROFILE_help,
+        )
+
     def temperature_callback(self, read_time, temp):
         self.last_temp = temp
         percent = self.control.angle_update(read_time, temp, self.target_temp)
@@ -123,6 +132,15 @@ class NevermoreServo:
 
     def lookup_control(self, profile):
         return self.control_types[profile["control"]](profile, self)
+
+    def set_control(self, control):
+        with self.lock:
+            old_control = self.control
+            self.control = control
+        return old_control
+
+    def get_control(self):
+        return self.control
 
 
 class ControlBangBang:
@@ -309,6 +327,7 @@ class ControlPID:
 
     @staticmethod
     def set_values(pmgr, gcmd, control, profile_name):
+        current_profile = pmgr.servo.get_control().get_profile()
         target = pmgr._check_value_gcmd("TARGET", None, gcmd, float, True)
         tolerance = pmgr._check_value_gcmd(
             "TOLERANCE",
@@ -325,12 +344,6 @@ class ControlPID:
             "SMOOTHING_ELEMENTS", None, gcmd, int, True
         )
         reverse = pmgr._check_value_gcmd("REVERSE", None, gcmd, bool, True)
-        keep_target = pmgr._check_value_gcmd(
-            "KEEP_TARGET", 0, gcmd, int, True, minval=0, maxval=1
-        )
-        load_clean = pmgr._check_value_gcmd(
-            "LOAD_CLEAN", 0, gcmd, int, True, minval=0, maxval=1
-        )
         temp_profile = {
             "name": profile_name,
             "control": control,
@@ -341,8 +354,8 @@ class ControlPID:
             "pid_kd": kd,
             "reverse": reverse,
         }
-        temp_control = pmgr.servo.lookup_control(temp_profile, load_clean)
-        pmgr.servo.set_control(temp_control, keep_target)
+        temp_control = pmgr.servo.lookup_control(temp_profile)
+        pmgr.servo.set_control(temp_control)
         msg = "PID Parameters:\n"
         if target is not None:
             msg += "Target: %.2f,\n" % target
