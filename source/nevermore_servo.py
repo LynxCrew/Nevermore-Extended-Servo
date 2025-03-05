@@ -53,8 +53,8 @@ class NevermoreServo:
             {
                 "watermark": ControlBangBang,
                 "pid": ControlPID,
-#                "manual": ControlManual,
-#                "template": ControlTemplate,
+                #                "manual": ControlManual,
+                #                "template": ControlTemplate,
             }
         )
         self.pmgr = ProfileManager(self, self.control_types)
@@ -93,9 +93,8 @@ class NevermoreServo:
         ) in TEMPLATE_PROFILE_OPTIONS.items():
             config.get(key, None)
 
-        self.servo = None
         self.nevermore = None
-        self.nevermore_name = config.get("nevermore", None)
+        self.nevermore_name = config.get("nevermore")
         if self.nevermore_name is not None:
             self.nevermore = self.printer.load_object(config, self.nevermore_name)
 

@@ -26,6 +26,10 @@ install_script: scripts/install.sh
 ## Config reference:
 ```
 [nevermore_servo my_nevermore_servo]
+nevermore:
+#   The nevermore this extended servo control should be tied to
+#   Leave your nevermore configuration as is, this is a plugin that hooks into
+#   it.
 min_temp:
 max_temp:
 #   See the "extruder" section for a description of the above parameters.
