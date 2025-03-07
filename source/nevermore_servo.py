@@ -48,22 +48,6 @@ class NevermoreServo:
         self.reactor = self.printer.get_reactor()
         self.lock = threading.Lock()
 
-        self.control_types = collections.OrderedDict(
-            {
-                "watermark": ControlBangBang,
-                "pid": ControlPID,
-                #                "manual": ControlManual,
-                #                "template": ControlTemplate,
-            }
-        )
-        self.pmgr = ProfileManager(self, self.control_types)
-        self.control = self.lookup_control(self.pmgr.init_default_profile())
-        self.pmgr.cached_control = self.control
-        if self.control is None:
-            raise self.config.error(
-                "Default Nevermore Servo-Profile could not be loaded."
-            )
-
         for key, (
             type,
             placeholder,
@@ -135,6 +119,22 @@ class NevermoreServo:
             maxval=self.max_temp,
         )
         self.target_temp = self.target_temp_conf
+
+        self.control_types = collections.OrderedDict(
+            {
+                "watermark": ControlBangBang,
+                "pid": ControlPID,
+                #                "manual": ControlManual,
+                #                "template": ControlTemplate,
+            }
+        )
+        self.pmgr = ProfileManager(self, self.control_types)
+        self.control = self.lookup_control(self.pmgr.init_default_profile())
+        self.pmgr.cached_control = self.control
+        if self.control is None:
+            raise self.config.error(
+                "Default Nevermore Servo-Profile could not be loaded."
+            )
 
         self.gcode.register_mux_command(
             "NEVERMORE_SERVO_PROFILE",
