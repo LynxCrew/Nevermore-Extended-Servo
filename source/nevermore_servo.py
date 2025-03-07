@@ -94,7 +94,7 @@ class NevermoreServo:
             config.get(key, None)
 
         self.nevermore = None
-        self.nevermore_name = config.get("nevermore")
+        self.nevermore_name = config.get("nevermore", None)
         if self.nevermore_name is None:
             self.nevermore = self.printer.load_object(config, "nevermore")
         else:
