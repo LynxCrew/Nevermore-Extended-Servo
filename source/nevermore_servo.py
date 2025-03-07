@@ -142,7 +142,8 @@ class NevermoreServo:
             desc=self.pmgr.cmd_NEVERMORE_SERVO_PROFILE_help,
         )
         self.gcode.register_mux_command(
-            "SET_NEVERMORE_SERVO_TEMPERATURE" "NEVERMORE_SERVO",
+            "SET_NEVERMORE_SERVO_TEMPERATURE",
+            "NEVERMORE_SERVO",
             self.name,
             self.cmd_SET_NEVERMORE_SERVO_TEMPERATURE,
             desc=self.cmd_SET_NEVERMORE_SERVO_TEMPERATURE_help,
