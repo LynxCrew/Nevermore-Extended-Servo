@@ -197,7 +197,7 @@ class NevermoreServo:
         if self.control is None:
             return
         percent = self.control.angle_update(read_time, temp, self.target_temp)
-        if abs(percent - self.last_percent) < self.update_tolerance:
+        if abs(percent - self.last_percent) > self.update_tolerance:
             self.last_percent = percent
             self.nevermore.set_vent_servo(percent, self.hold_time)
 
