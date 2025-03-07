@@ -97,7 +97,7 @@ class NevermoreServo:
         self.temp_sensor_name = self.config.get("temperature_sensor", None)
         if self.temp_sensor_name is not None:
             self.report_time = self.config.getfloat(
-                "sensor_report_time", 1.0, above=0.0
+                "sensor_report_time", 0.25, above=0.0
             )
             self.temp_sample_timer = self.reactor.register_timer(
                 self._temp_callback_timer
@@ -349,11 +349,11 @@ class ControlBangBang:
         elif self.heating == self.reverse and temp <= target_temp - self.max_delta:
             self.heating = not self.reverse
         if self.heating:
-            logging.info(f"nevermore_servo: {1.0}")
-            return 1.0
-        else:
             logging.info(f"nevermore_servo: {0.0}")
             return 0.0
+        else:
+            logging.info(f"nevermore_servo: {1.0}")
+            return 1.0
 
     def check_busy(self, eventtime, smoothed_temp, target_temp):
         return smoothed_temp < target_temp - self.max_delta
@@ -562,11 +562,11 @@ class ControlPID:
         bounded_co = max(0.0, min(self.max_percent, co))
         try:
             if not self.reverse:
-                logging.info(f"nevermore_servo: {max(0.0, 1.0 - bounded_co)}")
-                return max(0.0, 1.0 - bounded_co)
-            else:
                 logging.info(f"nevermore_servo: {max(0.0, bounded_co)}")
                 return max(0.0, bounded_co)
+            else:
+                logging.info(f"nevermore_servo: {max(0.0, 1.0 - bounded_co)}")
+                return max(0.0, 1.0 - bounded_co)
         finally:
             # Store state for next measurement
             self.prev_temp = temp
