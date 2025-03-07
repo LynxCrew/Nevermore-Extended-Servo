@@ -30,6 +30,7 @@ nevermore:
 #   The nevermore this extended servo control should be tied to
 #   Leave your nevermore configuration as is, this is a plugin that hooks into
 #   it.
+#   If not defined, it will try to grab the default [nevermore] section
 min_temp:
 max_temp:
 #   See the "extruder" section for a description of the above parameters.
