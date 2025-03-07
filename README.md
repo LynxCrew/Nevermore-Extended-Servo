@@ -70,8 +70,6 @@ control: watermark
 #   Invert the logic
 #
 #   For control: pid
-#reverse: False
-#   Invert the logic
 #pid_Kp:
 #pid_Ki:
 #pid_Kd:
@@ -87,6 +85,8 @@ control: watermark
 #   A time value (in seconds) over which temperature measurements will
 #   be smoothed when using the PID control algorithm. This may reduce
 #   the impact of measurement noise. The default is 2 seconds.
+#reverse: False
+#   Invert the logic
 ```
 
 To create additional profiles that can be loaded with the profile manager:

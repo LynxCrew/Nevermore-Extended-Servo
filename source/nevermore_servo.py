@@ -126,12 +126,7 @@ class NevermoreServo:
             self.sensor.setup_minmax(self.min_temp, self.max_temp)
             self.sensor.setup_callback(self.temperature_callback)
             pheaters.register_sensor(config, self)
-        self.target_temp_conf = config.getfloat(
-            "target_temp",
-            40.0 if self.max_temp > 40.0 else self.max_temp,
-            minval=self.min_temp,
-            maxval=self.max_temp,
-        )
+        self.target_temp_conf = config.getfloat("target_temp", 40.0)
         self.target_temp = self.target_temp_conf
 
         self.gcode.register_mux_command(
