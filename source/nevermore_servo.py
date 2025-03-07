@@ -105,6 +105,8 @@ class NevermoreServo:
             "update_tolerance", 1.0, minval=0.0
         )
 
+        self.min_temp = config.getfloat("min_temp", minval=KELVIN_TO_CELSIUS)
+        self.max_temp = config.getfloat("max_temp", above=self.min_temp)
         self.temperature_sensor = None
         self.temp_sample_timer = None
         self.report_time = None
@@ -119,14 +121,17 @@ class NevermoreServo:
             self.printer.register_event_handler("klippy:connect", self._handle_connect)
             self.printer.register_event_handler("klippy:ready", self._handle_ready)
         else:
-            self.min_temp = config.getfloat("min_temp", minval=KELVIN_TO_CELSIUS)
-            self.max_temp = config.getfloat("max_temp", above=self.min_temp)
             pheaters = self.printer.load_object(config, "heaters")
             self.sensor = pheaters.setup_sensor(config)
             self.sensor.setup_minmax(self.min_temp, self.max_temp)
             self.sensor.setup_callback(self.temperature_callback)
             pheaters.register_sensor(config, self)
-        self.target_temp_conf = config.getfloat("target_temp", 40.0)
+        self.target_temp_conf = config.getfloat(
+            "target_temp",
+            40.0 if self.max_temp > 40.0 else self.max_temp,
+            minval=self.min_temp,
+            maxval=self.max_temp,
+        )
         self.target_temp = self.target_temp_conf
 
         self.gcode.register_mux_command(
