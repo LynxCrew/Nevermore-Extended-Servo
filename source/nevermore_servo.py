@@ -107,6 +107,8 @@ class NevermoreServo:
 
         self.min_temp = config.getfloat("min_temp", minval=KELVIN_TO_CELSIUS)
         self.max_temp = config.getfloat("max_temp", above=self.min_temp)
+        self.config_smooth_time = config.getfloat("smooth_time", 1.0, above=0.0)
+        self.smooth_time = self.config_smooth_time
         self.temperature_sensor = None
         self.temp_sample_timer = None
         self.report_time = None
@@ -203,6 +205,9 @@ class NevermoreServo:
 
     def get_temp(self, eventtime):
         return self.last_temp, self.target_temp
+
+    def get_smooth_time(self):
+        return self.smooth_time
 
     def is_adc_faulty(self):
         if self.last_temp > self.max_temp or self.last_temp < self.min_temp:
@@ -557,8 +562,10 @@ class ControlPID:
         bounded_co = max(0.0, min(self.max_percent, co))
         try:
             if not self.reverse:
+                self.servo.gcode.respond_info(max(0.0, 1.0 - bounded_co))
                 return max(0.0, 1.0 - bounded_co)
             else:
+                self.servo.gcode.respond_info(max(0.0, bounded_co))
                 return max(0.0, bounded_co)
         finally:
             # Store state for next measurement
@@ -576,7 +583,7 @@ class ControlPID:
         )
 
     def update_smooth_time(self):
-        self.min_deriv_time = self.heater.get_smooth_time()  # smoothing window
+        self.min_deriv_time = self.servo.get_smooth_time()  # smoothing window
 
     def set_pid_kp(self, kp):
         self.Kp = kp / PID_PARAM_BASE
