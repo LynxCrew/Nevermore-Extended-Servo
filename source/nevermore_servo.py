@@ -351,8 +351,10 @@ class ControlBangBang:
         elif self.heating == self.reverse and temp <= target_temp - self.max_delta:
             self.heating = not self.reverse
         if self.heating:
+            self.servo.gcode.respond_info(1.0)
             return 1.0
         else:
+            self.servo.gcode.respond_info(0.0)
             return 0.0
 
     def check_busy(self, eventtime, smoothed_temp, target_temp):
