@@ -95,7 +95,9 @@ class NevermoreServo:
 
         self.nevermore = None
         self.nevermore_name = config.get("nevermore")
-        if self.nevermore_name is not None:
+        if self.nevermore_name is None:
+            self.nevermore = self.printer.load_object(config, "nevermore")
+        else:
             self.nevermore = self.printer.load_object(config, self.nevermore_name)
 
         self.hold_time = self.config.getfloat("hold_time", 0.5, above=0.0)
