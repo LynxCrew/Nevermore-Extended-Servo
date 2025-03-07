@@ -30,9 +30,9 @@ function check_download {
     if [ ! -d "${REPO_PATH}" ]; then
         echo "[DOWNLOAD] Downloading Nevermore-Extended-Servo repository..."
         if git -C $nevermoreextendedservodirname clone https://github.com/LynxCrew/Nevermore-Extended-Servo.git $nevermoreextendedservobasename; then
-            chmod +x ${REPO_PATH}/install.sh
-            chmod +x ${REPO_PATH}/update.sh
-            chmod +x ${REPO_PATH}/uninstall.sh
+            chmod +x ${REPO_PATH}/scripts/install.sh
+            chmod +x ${REPO_PATH}/scripts/update.sh
+            chmod +x ${REPO_PATH}/scripts/uninstall.sh
             printf "[DOWNLOAD] Download complete!\n\n"
         else
             echo "[ERROR] Download of Nevermore-Extended-Servo git repository failed!"

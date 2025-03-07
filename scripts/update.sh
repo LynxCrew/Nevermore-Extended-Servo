@@ -38,9 +38,9 @@ function update_repo {
 }
 
 function install {
-    chmod +x ${REPO_PATH}/install.sh
-    chmod +x ${REPO_PATH}/update.sh
-    chmod +x ${REPO_PATH}/uninstall.sh
+    chmod +x ${REPO_PATH}/scripts/install.sh
+    chmod +x ${REPO_PATH}/scripts/update.sh
+    chmod +x ${REPO_PATH}/scripts/uninstall.sh
     bash ${REPO_PATH}/install.sh
 }
 

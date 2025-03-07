@@ -47,7 +47,8 @@ max_temp:
 #   Name of the temperature_sensor to use
 #sensor_report_time: 1.0
 #   How many seconds to wait between each callback, lower increases sample rate
-#   but also load on the host
+#   but also load on the host.
+#   The default is 1s
 #hold_time: 0.5
 #   How long the servo should hold its position before being disengaged, the
 #   default is 0.5s
