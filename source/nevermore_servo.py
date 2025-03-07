@@ -543,7 +543,7 @@ class ControlPID:
         self.prev_temp_deriv = 0.0
         self.prev_temp_integ = 0.0
 
-    def temperature_update(self, read_time, temp, target_temp):
+    def angle_update(self, read_time, temp, target_temp):
         time_diff = read_time - self.prev_temp_time
         # Calculate change of temperature
         temp_diff = temp - self.prev_temp
