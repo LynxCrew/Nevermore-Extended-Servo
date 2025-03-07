@@ -67,7 +67,11 @@ control: watermark
 #   as well as the number of degrees below the target before
 #   re-opening the exhaust. The default is 2 degrees Celsius.
 #reverse: False
-#   Invert the logic
+#   Invert the logic.
+#min_percent: 0
+#   Servo flap percentage to be considered closed.
+#max_percent: 1
+#   Servo flap percentage to be considered open.
 #
 #   For control: pid
 #pid_Kp:
@@ -86,7 +90,11 @@ control: watermark
 #   be smoothed when using the PID control algorithm. This may reduce
 #   the impact of measurement noise. The default is 2 seconds.
 #reverse: False
-#   Invert the logic
+#   Invert the logic.
+#min_percent: 0
+#   Lower bound for the PID-Algorithm.
+#max_percent: 1
+#   Upper bound for the PID-Algorithm.
 ```
 
 To create additional profiles that can be loaded with the profile manager:
