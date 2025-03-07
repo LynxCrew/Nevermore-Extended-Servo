@@ -85,10 +85,7 @@ class NevermoreServo:
             self.nevermore = self.printer.load_object(config, self.nevermore_name)
 
         self.hold_time = self.config.getfloat("hold_time", 0.5, above=0.0)
-        self.update_tolerance = (
-            self.config.getfloat("update_tolerance", 1.0, minval=0.0, maxval=100.0)
-            / 100
-        )
+        self.update_tolerance = self.config.getfloat("update_tolerance", 0.01, minval=0.0, maxval=1.0)
 
         self.min_temp = config.getfloat("min_temp", minval=KELVIN_TO_CELSIUS)
         self.max_temp = config.getfloat("max_temp", above=self.min_temp)
