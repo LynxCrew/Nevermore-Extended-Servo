@@ -351,10 +351,10 @@ class ControlBangBang:
         elif self.heating == self.reverse and temp <= target_temp - self.max_delta:
             self.heating = not self.reverse
         if self.heating:
-            self.servo.gcode.respond_info(1.0)
+            logging.info(f"nevermore_servo: {1.0}")
             return 1.0
         else:
-            self.servo.gcode.respond_info(0.0)
+            logging.info(f"nevermore_servo: {0.0}")
             return 0.0
 
     def check_busy(self, eventtime, smoothed_temp, target_temp):
@@ -564,10 +564,10 @@ class ControlPID:
         bounded_co = max(0.0, min(self.max_percent, co))
         try:
             if not self.reverse:
-                self.servo.gcode.respond_info(max(0.0, 1.0 - bounded_co))
+                logging.info(f"nevermore_servo: {max(0.0, 1.0 - bounded_co)}")
                 return max(0.0, 1.0 - bounded_co)
             else:
-                self.servo.gcode.respond_info(max(0.0, bounded_co))
+                logging.info(f"nevermore_servo: {max(0.0, bounded_co)}")
                 return max(0.0, bounded_co)
         finally:
             # Store state for next measurement
