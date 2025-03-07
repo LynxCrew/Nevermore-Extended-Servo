@@ -79,7 +79,9 @@ class NevermoreServo:
             self.nevermore = self.printer.load_object(config, self.nevermore_name)
 
         self.hold_time = self.config.getfloat("hold_time", 0.5, above=0.0)
-        self.update_tolerance = self.config.getfloat("update_tolerance", 0.01, minval=0.0, maxval=1.0)
+        self.update_tolerance = self.config.getfloat(
+            "update_tolerance", 0.01, minval=0.0, maxval=1.0
+        )
 
         self.min_temp = config.getfloat("min_temp", minval=KELVIN_TO_CELSIUS)
         self.max_temp = config.getfloat("max_temp", above=self.min_temp)
@@ -279,18 +281,10 @@ class ControlBangBang:
             False,
         )
         min_percent = pmgr._check_value_gcmd(
-            "MIN_PERCENT",
-            current_profile["min_percent"],
-            gcmd,
-            float,
-            True
+            "MIN_PERCENT", current_profile["min_percent"], gcmd, float, True
         )
         max_percent = pmgr._check_value_gcmd(
-            "MAX_PERCENT",
-            current_profile["max_percent"],
-            gcmd,
-            float,
-            True
+            "MAX_PERCENT", current_profile["max_percent"], gcmd, float, True
         )
         temp_profile = {
             "name": profile_name,
@@ -309,7 +303,8 @@ class ControlBangBang:
             "Reverse: %s\n"
             "Min Percent: %.3f\n"
             "Max Percent: %.3f\n"
-            "have been set as current profile." % (control, max_delta, reverse, min_percent, max_percent)
+            "have been set as current profile."
+            % (control, max_delta, reverse, min_percent, max_percent)
         )
         pmgr.servo.gcode.respond_info(msg)
 
@@ -451,18 +446,10 @@ class ControlPID:
         )
         reverse = pmgr._check_value_gcmd("REVERSE", None, gcmd, bool, True)
         min_percent = pmgr._check_value_gcmd(
-            "MIN_PERCENT",
-            current_profile["min_percent"],
-            gcmd,
-            float,
-            True
+            "MIN_PERCENT", current_profile["min_percent"], gcmd, float, True
         )
         max_percent = pmgr._check_value_gcmd(
-            "MAX_PERCENT",
-            current_profile["max_percent"],
-            gcmd,
-            float,
-            True
+            "MAX_PERCENT", current_profile["max_percent"], gcmd, float, True
         )
         temp_profile = {
             "name": profile_name,
@@ -595,12 +582,18 @@ class ControlPID:
         co = self.Kp * temp_err + self.Ki * temp_integ - self.Kd * temp_deriv
         # logging.debug("pid: %f@%.3f -> diff=%f deriv=%f err=%f integ=%f co=%d",
         #    temp, read_time, temp_diff, temp_deriv, temp_err, temp_integ, co)
-        bounded_co = max(self.min_percent, min(self.max_percent, co))
+        bounded_co = max(0.0, min(1.0, co))
         try:
             if not self.reverse:
-                return max(self.min_percent, bounded_co)
+                return (
+                    max(0.0, bounded_co) * (self.max_percent - self.min_percent)
+                    + self.min_percent
+                )
             else:
-                return max(self.min_percent, self.max_percent - bounded_co)
+                return (
+                    max(0.0, 1.0 - bounded_co) * (self.max_percent - self.min_percent)
+                    + self.min_percent
+                )
         finally:
             # Store state for next measurement
             self.prev_temp = temp
