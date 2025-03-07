@@ -13,6 +13,8 @@ WATERMARK_PROFILE_OPTIONS = {
     "control": (str, "%s", "watermark", False),
     "max_delta": (float, "%.4f", 2.0, True),
     "reverse": (bool, "%s", False, True),
+    "min_percent": (float, "%.3f", 0.0, True),
+    "max_percent": (float, "%.3f", 1.0, True),
 }
 # (type, placeholder, default, can_be_none)
 PID_PROFILE_OPTIONS = {
@@ -23,9 +25,8 @@ PID_PROFILE_OPTIONS = {
     "pid_ki": (float, "%.3f", None, False),
     "pid_kd": (float, "%.3f", None, False),
     "reverse": (bool, "%s", False, True),
-}
-MANUAL_PROFILE_OPTIONS = {
-    "control": (str, "%s", "manual", False),
+    "min_percent": (float, "%.3f", 0.0, True),
+    "max_percent": (float, "%.3f", 1.0, True),
 }
 TEMPLATE_PROFILE_OPTIONS = {
     "control": (str, "%s", "template", False),
@@ -61,13 +62,6 @@ class NevermoreServo:
             default,
             can_be_none,
         ) in PID_PROFILE_OPTIONS.items():
-            config.get(key, None)
-        for key, (
-            type,
-            placeholder,
-            default,
-            can_be_none,
-        ) in MANUAL_PROFILE_OPTIONS.items():
             config.get(key, None)
         for key, (
             type,
@@ -284,11 +278,27 @@ class ControlBangBang:
             bool,
             False,
         )
+        min_percent = pmgr._check_value_gcmd(
+            "MIN_PERCENT",
+            current_profile["min_percent"],
+            gcmd,
+            float,
+            True
+        )
+        max_percent = pmgr._check_value_gcmd(
+            "MAX_PERCENT",
+            current_profile["max_percent"],
+            gcmd,
+            float,
+            True
+        )
         temp_profile = {
             "name": profile_name,
             "control": control,
             "max_delta": max_delta,
             "reverse": reverse,
+            "min_percent": min_percent,
+            "max_percent": max_percent,
         }
         temp_control = pmgr.servo.lookup_control(temp_profile)
         pmgr.servo.set_control(temp_control)
@@ -297,7 +307,9 @@ class ControlBangBang:
             "Control: %s\n"
             "Max Delta: %.4f\n"
             "Reverse: %s\n"
-            "have been set as current profile." % (control, max_delta, reverse)
+            "Min Percent: %.3f\n"
+            "Max Percent: %.3f\n"
+            "have been set as current profile." % (control, max_delta, reverse, min_percent, max_percent)
         )
         pmgr.servo.gcode.respond_info(msg)
 
@@ -329,11 +341,12 @@ class ControlBangBang:
     @staticmethod
     def load_console_message(profile, servo):
         max_delta = profile["max_delta"]
-        reverse = profile["reverse"]
         msg = "Control: %s\n" % (profile["control"],)
         if max_delta is not None:
             msg += "Max Delta: %.3f\n" % max_delta
-            msg += "Reverse: %s\n" % reverse
+        msg += "Reverse: %s\n" % profile["reverse"]
+        msg += "Min Percent: %.3f\n" % profile["min_percent"]
+        msg += "Max Percent: %.3f\n" % profile["max_percent"]
         return msg
 
     def __init__(self, profile, servo):
@@ -341,6 +354,8 @@ class ControlBangBang:
         self.servo = servo
         self.max_delta = profile["max_delta"]
         self.reverse = profile["reverse"]
+        self.min_percent = profile["min_percent"]
+        self.max_percent = profile["max_percent"]
         self.heating = False
 
     def angle_update(self, read_time, temp, target_temp):
@@ -349,11 +364,9 @@ class ControlBangBang:
         elif self.heating == self.reverse and temp <= target_temp - self.max_delta:
             self.heating = not self.reverse
         if self.heating:
-            logging.info(f"nevermore_servo: {0.0}")
-            return 0.0
+            return self.min_percent
         else:
-            logging.info(f"nevermore_servo: {1.0}")
-            return 1.0
+            return self.max_percent
 
     def check_busy(self, eventtime, smoothed_temp, target_temp):
         return smoothed_temp < target_temp - self.max_delta
@@ -437,6 +450,20 @@ class ControlPID:
             "SMOOTHING_ELEMENTS", None, gcmd, int, True
         )
         reverse = pmgr._check_value_gcmd("REVERSE", None, gcmd, bool, True)
+        min_percent = pmgr._check_value_gcmd(
+            "MIN_PERCENT",
+            current_profile["min_percent"],
+            gcmd,
+            float,
+            True
+        )
+        max_percent = pmgr._check_value_gcmd(
+            "MAX_PERCENT",
+            current_profile["max_percent"],
+            gcmd,
+            float,
+            True
+        )
         temp_profile = {
             "name": profile_name,
             "control": control,
@@ -446,6 +473,8 @@ class ControlPID:
             "pid_ki": ki,
             "pid_kd": kd,
             "reverse": reverse,
+            "min_percent": min_percent,
+            "max_percent": max_percent,
         }
         temp_control = pmgr.servo.lookup_control(temp_profile)
         pmgr.servo.set_control(temp_control)
@@ -461,6 +490,10 @@ class ControlPID:
             msg += "Smoothing Elements: %d\n" % smoothing_elements
         if reverse is not None:
             msg += "Reverse: %d\n" % reverse
+        if min_percent is not None:
+            msg += "Min Percent: %.3f\n" % min_percent
+        if max_percent is not None:
+            msg += "Max Percent: %.3f\n" % max_percent
         msg += (
             "pid_Kp=%.3f pid_Ki=%.3f pid_Kd=%.3f\n"
             "have been set as current profile." % (kp, ki, kd)
@@ -518,16 +551,19 @@ class ControlPID:
             profile["pid_kd"],
         )
         msg += "Reverse: %s" % profile["reverse"]
+        msg += "Min Percent: %.3f\n" % profile["min_percent"]
+        msg += "Max Percent: %.3f\n" % profile["max_percent"]
         return msg
 
     def __init__(self, profile, servo):
         self.profile = profile
         self.servo = servo
-        self.max_percent = 1
         self.Kp = profile["pid_kp"] / PID_PARAM_BASE
         self.Ki = profile["pid_ki"] / PID_PARAM_BASE
         self.Kd = profile["pid_kd"] / PID_PARAM_BASE
         self.reverse = profile["reverse"]
+        self.min_percent = profile["min_percent"]
+        self.max_percent = profile["max_percent"]
         self.min_deriv_time = (
             self.servo.get_smooth_time()
             if profile["smooth_time"] is None
@@ -559,14 +595,12 @@ class ControlPID:
         co = self.Kp * temp_err + self.Ki * temp_integ - self.Kd * temp_deriv
         # logging.debug("pid: %f@%.3f -> diff=%f deriv=%f err=%f integ=%f co=%d",
         #    temp, read_time, temp_diff, temp_deriv, temp_err, temp_integ, co)
-        bounded_co = max(0.0, min(self.max_percent, co))
+        bounded_co = max(self.min_percent, min(self.max_percent, co))
         try:
             if not self.reverse:
-                logging.info(f"nevermore_servo: {max(0.0, bounded_co)}")
-                return max(0.0, bounded_co)
+                return max(self.min_percent, bounded_co)
             else:
-                logging.info(f"nevermore_servo: {max(0.0, 1.0 - bounded_co)}")
-                return max(0.0, 1.0 - bounded_co)
+                return max(self.min_percent, self.max_percent - bounded_co)
         finally:
             # Store state for next measurement
             self.prev_temp = temp

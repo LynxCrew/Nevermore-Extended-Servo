@@ -210,14 +210,10 @@ class ProfileManager:
             )
 
     def use_manual(self, profile_name, gcmd=None):
-        if profile_name == 1:
+        if profile_name.lower() in STR_TO_BOOL:
             self.cached_control = self.servo.set_control(None)
-        elif profile_name == 0:
-            self.servo.set_control(self.cached_control)
         else:
-            raise self.servo.gcode.error(
-                "nevermore_servo_profile: manual can be either 0 or 1"
-            )
+            self.servo.set_control(self.cached_control)
 
 
     cmd_NEVERMORE_SERVO_PROFILE_help = (
