@@ -359,9 +359,9 @@ class ControlBangBang:
         elif self.heating == self.reverse and temp <= target_temp - self.max_delta:
             self.heating = not self.reverse
         if self.heating:
-            return 0.0
+            return self.min_percent
         else:
-            return 1.0
+            return self.max_percent
 
     def check_busy(self, eventtime, smoothed_temp, target_temp):
         return smoothed_temp < target_temp - self.max_delta
@@ -585,9 +585,15 @@ class ControlPID:
         bounded_co = max(0.0, min(1.0, co))
         try:
             if not self.reverse:
-                return max(0.0, bounded_co)
+                return (
+                    max(0.0, bounded_co) * (self.max_percent - self.min_percent)
+                    + self.min_percent
+                )
             else:
-                return max(0.0, 1.0 - bounded_co)
+                return (
+                    max(0.0, 1.0 - bounded_co) * (self.max_percent - self.min_percent)
+                    + self.min_percent
+                )
         finally:
             # Store state for next measurement
             self.prev_temp = temp
