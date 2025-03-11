@@ -1,3 +1,10 @@
+# Nevermore Controller Servo Extension
+#
+# Copyright (C) 2025       Vinzenz Hassert
+#
+# This file may be distributed under the terms of the GNU GPLv3 license.
+
+
 import collections
 import logging
 import threading

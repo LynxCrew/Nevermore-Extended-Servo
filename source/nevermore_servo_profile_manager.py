@@ -1,3 +1,9 @@
+# Nevermore Controller Servo Profile Manager
+#
+# Copyright (C) 2025       Vinzenz Hassert
+#
+# This file may be distributed under the terms of the GNU GPLv3 license.
+
 import collections
 
 
