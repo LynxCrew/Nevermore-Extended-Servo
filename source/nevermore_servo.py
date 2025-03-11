@@ -80,7 +80,7 @@ class NevermoreServo:
 
         self.hold_time = self.config.getfloat("hold_time", 0.5, above=0.0)
         self.update_tolerance = self.config.getfloat(
-            "update_tolerance", 0.01, minval=0.0, maxval=1.0
+            "update_tolerance", 0.05, minval=0.0, maxval=1.0
         )
 
         self.min_temp = config.getfloat("min_temp", minval=KELVIN_TO_CELSIUS)
@@ -93,7 +93,7 @@ class NevermoreServo:
         self.temp_sensor_name = self.config.get("temperature_sensor", None)
         if self.temp_sensor_name is not None:
             self.report_time = self.config.getfloat(
-                "sensor_report_time", 0.25, above=0.0
+                "sensor_report_time", 1.0, above=0.0
             )
             self.temp_sample_timer = self.reactor.register_timer(
                 self._temp_callback_timer
