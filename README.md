@@ -53,9 +53,13 @@ max_temp:
 #hold_time: 0.5
 #   How long the servo should hold its position before being disengaged, the
 #   default is 0.5s
-#update_tolerance: 
+#update_tolerance: 0.05
 #   How much the flap would need to move in percent to trigger an update that
-#   actually changes its position, the default is 1°.
+#   actually changes its position, the default is 5%.
+#register_as_heater: False
+#   If set to true the servo will be registered as a heater, thus the normal
+#   commands become available as well.
+#   This is a workaround to make it visible in Fluidd or Mainsail.
 #
 control: watermark
 #   Can be either pid or watermark

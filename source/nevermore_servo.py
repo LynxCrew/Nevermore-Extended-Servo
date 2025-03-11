@@ -7,6 +7,7 @@ from extras.nevermore_servo_profile_manager import ProfileManager
 KELVIN_TO_CELSIUS = -273.15
 AMBIENT_TEMP = 25.0
 PID_PARAM_BASE = 255.0
+MAX_MAINTHREAD_TIME = 5.0
 SERVO_PROFILE_VERSION = 1
 
 WATERMARK_PROFILE_OPTIONS = {
@@ -87,6 +88,7 @@ class NevermoreServo:
         self.max_temp = config.getfloat("max_temp", above=self.min_temp)
         self.config_smooth_time = config.getfloat("smooth_time", 1.0, above=0.0)
         self.smooth_time = self.config_smooth_time
+        pheaters = self.printer.load_object(config, "heaters")
         self.temperature_sensor = None
         self.temp_sample_timer = None
         self.report_time = None
@@ -101,7 +103,6 @@ class NevermoreServo:
             self.printer.register_event_handler("klippy:connect", self._handle_connect)
             self.printer.register_event_handler("klippy:ready", self._handle_ready)
         else:
-            pheaters = self.printer.load_object(config, "heaters")
             self.sensor = pheaters.setup_sensor(config)
             self.sensor.setup_minmax(self.min_temp, self.max_temp)
             self.sensor.setup_callback(self.temperature_callback)
@@ -113,6 +114,21 @@ class NevermoreServo:
             maxval=self.max_temp,
         )
         self.target_temp = self.target_temp_conf
+
+        self.register_as_heater = config.getboolean("register_as_heater", False)
+        if self.register_as_heater:
+            if self.name in pheaters.heaters:
+                raise config.error("Heater %s already registered" % (self.name,))
+            pheaters.heaters[self.name] = self
+            pheaters.available_sensors.append(self.name)
+            pheaters.available_heaters.append(self.name)
+            self.gcode.register_mux_command(
+                "SET_HEATER_TEMPERATURE",
+                "HEATER",
+                self.name,
+                self.cmd_SET_NEVERMORE_SERVO,
+                desc=self.cmd_SET_NEVERMORE_SERVO_help,
+            )
 
         self.control_types = collections.OrderedDict(
             {
@@ -168,12 +184,7 @@ class NevermoreServo:
     def cmd_SET_NEVERMORE_SERVO(self, gcmd):
         degrees = gcmd.get_float("TARGET", 0.0)
         hold_for = gcmd.get_float("HOLD_FOR", self.hold_time)
-        if degrees and (degrees < self.min_temp or degrees > self.max_temp):
-            raise self.printer.command_error(
-                "Requested temperature (%.1f) out of range (%.1f:%.1f)"
-                % (degrees, self.min_temp, self.max_temp)
-            )
-        self.target_temp = degrees
+        self.set_temp(degrees)
         self.hold_time = hold_for
 
     def _temp_callback_timer(self, eventtime):
@@ -197,6 +208,17 @@ class NevermoreServo:
             self.last_percent = percent
             self.nevermore.set_vent_servo(percent, self.hold_time)
 
+    def set_temp(self, degrees):
+        if degrees and (degrees < self.min_temp or degrees > self.max_temp):
+            raise self.printer.command_error(
+                "Requested temperature (%.1f) out of range (%.1f:%.1f)"
+                % (degrees, self.min_temp, self.max_temp)
+            )
+        with self.lock:
+            if degrees != 0.0 and hasattr(self.control, "check_valid"):
+                self.control.check_valid()
+            self.target_temp = degrees
+
     def get_temp(self, eventtime):
         return self.last_temp, self.target_temp
 
@@ -211,6 +233,10 @@ class NevermoreServo:
     def lookup_control(self, profile):
         return self.control_types[profile["control"]](profile, self)
 
+    def check_busy(self, eventtime):
+        with self.lock:
+            return self.control.check_busy(eventtime, self.last_temp, self.target_temp)
+
     def set_control(self, control):
         with self.lock:
             old_control = self.control
@@ -220,12 +246,26 @@ class NevermoreServo:
     def get_control(self):
         return self.control
 
+    def stats(self, eventtime):
+        with self.lock:
+            target_temp = self.target_temp
+            last_temp = self.last_temp
+            last_pwm_value = self.last_percent
+        is_active = target_temp or last_temp > 50.0
+        return is_active, "%s: target=%.0f temp=%.1f pwm=%.3f" % (
+            self.name,
+            target_temp,
+            last_temp,
+            last_pwm_value,
+        )
+
     def get_status(self, eventtime):
         return {
             "temperature": round(self.last_temp, 2),
             "measured_min_temp": round(self.measured_min, 2),
             "measured_max_temp": round(self.measured_max, 2),
             "target": self.target_temp,
+            "power": self.last_percent,
             "control": self.control.get_type(),
         }
 

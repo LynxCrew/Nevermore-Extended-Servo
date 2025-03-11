@@ -60,6 +60,8 @@ class ProfileManager:
             value = config_section.getfloat(
                 key, default=default, minval=minval, above=above
             )
+        elif type is bool:
+            value = config_section.getboolean(key, default=default)
         elif type == "floatlist":
             value = config_section.getfloatlist(key, default=default)
         elif isinstance(type, tuple) and len(type) == 4 and type[0] == "lists":
