@@ -215,7 +215,6 @@ class ProfileManager:
         else:
             self.servo.set_control(self.cached_control)
 
-
     cmd_NEVERMORE_SERVO_PROFILE_help = (
         "Nevermore Servo Profile Persistent Storage management"
     )

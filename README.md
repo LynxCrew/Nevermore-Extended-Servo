@@ -140,6 +140,6 @@ If MANUAL=1, the automatic control will be disabled and it can be controlled nor
 via commands.
 MANUAL=0 will load the last used control again.
 
-#### SET_NEVERMORE_SERVO_TEMPERATURE
-`SET_NEVERMORE_SERVO_TEMPERATURE NEVERMORE_SERVO=<nevermore_servo_name> [TARGET=<target_temperature>]`
-Set the target Temperature for the nevermore-servo control algorithm.
+#### SET_NEVERMORE_SERVO
+`SET_NEVERMORE_SERVO NEVERMORE_SERVO=<nevermore_servo_name> [TARGET=<target_temperature>] [HOLD_FOR=<hold_for>]`
+Set the target Temperature and hold time for the nevermore-servo control algorithm.

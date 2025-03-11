@@ -138,11 +138,11 @@ class NevermoreServo:
             desc=self.pmgr.cmd_NEVERMORE_SERVO_PROFILE_help,
         )
         self.gcode.register_mux_command(
-            "SET_NEVERMORE_SERVO_TEMPERATURE",
+            "SET_NEVERMORE_SERVO",
             "NEVERMORE_SERVO",
             self.name,
-            self.cmd_SET_NEVERMORE_SERVO_TEMPERATURE,
-            desc=self.cmd_SET_NEVERMORE_SERVO_TEMPERATURE_help,
+            self.cmd_SET_NEVERMORE_SERVO,
+            desc=self.cmd_SET_NEVERMORE_SERVO_help,
         )
 
     def _handle_connect(self):
@@ -163,18 +163,18 @@ class NevermoreServo:
         # Start temperature update timer
         self.reactor.update_timer(self.temp_sample_timer, self.reactor.NOW)
 
-    cmd_SET_NEVERMORE_SERVO_TEMPERATURE_help = (
-        "Sets a nevermore_servo target temperature"
-    )
+    cmd_SET_NEVERMORE_SERVO_help = "Sets a nevermore_servo target temperature"
 
-    def cmd_SET_NEVERMORE_SERVO_TEMPERATURE(self, gcmd):
+    def cmd_SET_NEVERMORE_SERVO(self, gcmd):
         degrees = gcmd.get_float("TARGET", 0.0)
+        hold_for = gcmd.get_float("HOLD_FOR", self.hold_time)
         if degrees and (degrees < self.min_temp or degrees > self.max_temp):
             raise self.printer.command_error(
                 "Requested temperature (%.1f) out of range (%.1f:%.1f)"
                 % (degrees, self.min_temp, self.max_temp)
             )
         self.target_temp = degrees
+        self.hold_time = hold_for
 
     def _temp_callback_timer(self, eventtime):
         measured_time = self.reactor.monotonic()
