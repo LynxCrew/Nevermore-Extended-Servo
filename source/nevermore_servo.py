@@ -57,6 +57,7 @@ class NevermoreServo:
         self.reactor = self.printer.get_reactor()
         self.lock = threading.Lock()
 
+        # Read all possible config options once so the klipper config parser does not complain about invalid options
         for key, (
             type,
             placeholder,
@@ -79,6 +80,7 @@ class NevermoreServo:
         ) in TEMPLATE_PROFILE_OPTIONS.items():
             config.get(key, None)
 
+        # Grab Nevermore Controller instance
         self.nevermore = None
         self.nevermore_name = config.get("nevermore", None)
         if self.nevermore_name is None:
